@@ -473,20 +473,61 @@ async function saveNIPayment(liabId) {
     const date = document.getElementById(`pay-ni-date-${liabId}`).value;
     const provider = document.getElementById(`pay-ni-provider-${liabId}`).value.trim();
     const amount = parseFloat(document.getElementById(`pay-ni-amount-${liabId}`).value);
-    if (!date || !provider || !amount) return alert("Fill all payment fields!");
-    const dbData = await getDB();
-    const idx = dbData.nonInterestLiabilities.findIndex(x => x.id === liabId);
-    if (payId) {
-        const pmtIndex = dbData.nonInterestLiabilities[idx].payments.findIndex(p => p.id === payId);
-        dbData.nonInterestLiabilities[idx].payments[pmtIndex] = { id: payId, date, provider, amount };
-    } else {
-        if (dbData.nonInterestLiabilities[idx].payments.length >= dbData.nonInterestLiabilities[idx].totalMonths) {
-            return alert("All specified months have already been paid for this schedule!");
-        }
-        dbData.nonInterestLiabilities[idx].payments.push({ id: generateId(), date, provider, amount });
+
+    if (!date || !provider || !amount) {
+        return alert("Fill all payment fields!");
     }
-    saveToDB('nonInterestLiabilities', dbData.nonInterestLiabilities);
-    renderExpenseDashboard();
+
+    const dbData = await getDB();
+
+    const idx = dbData.nonInterestLiabilities.findIndex(
+        x => x.id === liabId
+    );
+
+    if (idx === -1) return;
+
+    if (payId) {
+
+        const pmtIndex =
+            dbData.nonInterestLiabilities[idx]
+                .payments.findIndex(p => p.id === payId);
+
+        dbData.nonInterestLiabilities[idx]
+            .payments[pmtIndex] = {
+            id: payId,
+            date,
+            provider,
+            amount
+        };
+
+    } else {
+
+        if (
+            dbData.nonInterestLiabilities[idx]
+                .payments.length >=
+            dbData.nonInterestLiabilities[idx].totalMonths
+        ) {
+            return alert(
+                "All specified months have already been paid!"
+            );
+        }
+
+        dbData.nonInterestLiabilities[idx]
+            .payments.push({
+                id: generateId(),
+                date,
+                provider,
+                amount
+            });
+    }
+
+    await db.collection('nonInterestLiabilities')
+        .doc(liabId)
+        .set(dbData.nonInterestLiabilities[idx]);
+
+    await renderExpenseDashboard();
+
+    cancelNIPayment(liabId);
 }
 
 async function deleteNIPayment(liabId, pmtId) {
@@ -494,7 +535,9 @@ async function deleteNIPayment(liabId, pmtId) {
     const dbData = await getDB();
     const idx = dbData.nonInterestLiabilities.findIndex(x => x.id === liabId);
     dbData.nonInterestLiabilities[idx].payments = dbData.nonInterestLiabilities[idx].payments.filter(p => p.id !== pmtId);
-    saveToDB('nonInterestLiabilities', dbData.nonInterestLiabilities);
+    await db.collection('nonInterestLiabilities')
+        .doc(liabId)
+        .set(dbData.nonInterestLiabilities[idx]);
     renderExpenseDashboard();
 }
 
