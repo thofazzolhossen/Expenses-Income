@@ -667,6 +667,131 @@ async function renderExpenseDashboard() {
     });
 
     // ---- 2. NON BANK LIABILITIES ----
+    const nbLabels = dbData.nonBankLiabilities.map(nb => nb.name);
+    const nbAmounts = dbData.nonBankLiabilities.map(nb => nb.totalAmt);
+    const nbTotal = nbAmounts.reduce((sum, val) => sum + val, 0);
+
+    const nbTitleEl = document.getElementById('nb-pie-chart-title');
+    if (nbTitleEl) nbTitleEl.innerText = `Total Non Bank Amt ($${formatAmount(nbTotal)})`;
+
+    const ctxNbPieObj = document.getElementById('nb-pie-chart');
+    if (ctxNbPieObj) {
+        const ctxNbPie = ctxNbPieObj.getContext('2d');
+        if (window.nbPieChartInstance) window.nbPieChartInstance.destroy();
+        let nPieLabels = nbLabels.length > 0 ? nbLabels : ["No Data"];
+        let nPieData = nbLabels.length > 0 ? nbAmounts : [0];
+        window.nbPieChartInstance = new Chart(ctxNbPie, {
+            type: 'line',
+            data: {
+                labels: nPieLabels,
+                datasets: [{
+                    label: 'Liability Amount ($)',
+                    data: nPieData,
+                    borderColor: '#0dcaf0',
+                    backgroundColor: 'rgba(13,202,240,0.2)',
+                    tension: 0.3,
+                    pointBackgroundColor: '#0dcaf0',
+                    pointBorderColor: '#0dcaf0',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                if (nPieLabels[0] === "No Data") return "No records";
+                                return `${context.label}: $${formatAmount(context.raw)}`;
+                            }
+                        }
+                    },
+                    title: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Amount ($)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Name'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    //----------------------------
+    const nbInterestLabels = dbData.nonBankLiabilities.map(nb => nb.name);
+    const nbInterestData = dbData.nonBankLiabilities.map(nb => nb.interestMonthly);
+    const nbInterestTotal = nbInterestData.reduce((sum, val) => sum + val, 0);
+
+    const nbInterestTitleEl = document.getElementById('nb-interest-bar-chart-title');
+    if (nbInterestTitleEl) nbInterestTitleEl.innerText = `Total Non Bank Interest Distribution ($${formatAmount(nbInterestTotal)})`;
+
+    const ctxNbInterestBarObj = document.getElementById('nb-interest-bar-chart');
+    if (ctxNbInterestBarObj) {
+        const ctxNbInterestBar = ctxNbInterestBarObj.getContext('2d');
+        if (window.nbInterestBarChartInstance) window.nbInterestBarChartInstance.destroy();
+        let barLabels = nbInterestLabels.length > 0 ? nbInterestLabels : ["No Data"];
+        let barData = nbInterestLabels.length > 0 ? nbInterestData : [0];
+        window.nbInterestBarChartInstance = new Chart(ctxNbInterestBar, {
+            type: 'bar',
+            data: {
+                labels: barLabels,
+                datasets: [{
+                    label: 'Total Interest ($)',
+                    data: barData,
+                    backgroundColor: '#ffc107'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                if (barLabels[0] === "No Data") return "No records";
+                                return `${context.label}: $${formatAmount(context.raw)}`;
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: `Non Bank Liabilities - Total Interest`
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Interest ($)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Name'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    //------------------------------
     const tbodyNB = document.getElementById('nb-list');
     if (tbodyNB) tbodyNB.innerHTML = '';
 
